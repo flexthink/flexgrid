@@ -4,11 +4,14 @@ Authors
  * Artem Ploujnikov 2026
 """
 
+import torch
 
-from numbers import Number
 
-
-def linear(min: Number, max: Number, step: Number = 1) -> list[Number]:
+def linear(
+    min: int | float,
+    max: int | float,
+    step: int | float = 1
+) -> list[int | float]:
     """Represents a linear range of values to try. This
     function is provided mainly for readability
 
@@ -26,4 +29,4 @@ def linear(min: Number, max: Number, step: Number = 1) -> list[Number]:
     values : list[Number]
         The materialized range
     """
-    return list(range(min, max+1, step))
+    return torch.arange(min, max + step, step).tolist()

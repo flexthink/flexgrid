@@ -15,19 +15,20 @@ from typing import Iterable
 
 from types import SimpleNamespace
 from speechbrain.utils.logger import get_logger
-from sympy import Number
 from tqdm.auto import tqdm
 
 logger = get_logger(__name__)
 
 
 class GridSearch:
-    def __init__(self, hparams, cmd_args=None):
+    def __init__(self, hparams: dict, cmd_args: list[str] | None = None):
         if "cwd" not in hparams:
             hparams["cwd"] = Path(".")
         if "run" not in hparams:
             hparams["run"] = "train.py"
         self.hparams = SimpleNamespace(hparams)
+        if cmd_args is None:
+            cmd_args = []
         self.cmd_args = cmd_args
 
     def __call__(self):
@@ -224,7 +225,7 @@ def parse_train_log_data(data: str) -> dict:
     }
 
 
-def convert_numeric(value: str) -> str | Number:
+def convert_numeric(value: str) -> str | int | float:
     """If the value is numeric, it will be converted to
     an int or a float. Otherwise it will remain a string
 
@@ -236,15 +237,17 @@ def convert_numeric(value: str) -> str | Number:
     Returns
     -------
     value : str | Number
-        A"""
+        A value
+    """
+    result = value
     try:
-        value = int(value)
+        result = int(value)
     except ValueError:
         try:
-            value = float(value)
+            result = float(value)
         except ValueError:
             pass
-    return value
+    return result
 
 
 def format_params_log(params: dict) -> str:
