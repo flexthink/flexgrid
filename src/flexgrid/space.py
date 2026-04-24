@@ -10,7 +10,8 @@ import torch
 def linear(
     min: int | float,
     max: int | float,
-    step: int | float = 1
+    step: int | float = 1,
+    decimals: int | None = None,
 ) -> list[int | float]:
     """Represents a linear range of values to try. This
     function is provided mainly for readability
@@ -23,6 +24,8 @@ def linear(
         The maximum value
     step : Number
         The step size
+    decimals : int | None
+        The number of decimal places
 
     Returns
     -------
@@ -36,4 +39,12 @@ def linear(
         or isinstance(step, float)
     ):
         dtype = torch.float64
-    return torch.arange(min, max + step, step, dtype=dtype).tolist()
+    items = torch.arange(
+        min,
+        max + step,
+        step,
+        dtype=dtype
+    )
+    if decimals is not None:
+        items = items.round(decimals=decimals)
+    return items.tolist()
