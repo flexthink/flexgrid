@@ -29,4 +29,11 @@ def linear(
     values : list[Number]
         The materialized range
     """
-    return torch.arange(min, max + step, step).tolist()
+    dtype = None
+    if (
+        isinstance(min, float)
+        or isinstance(max, float)
+        or isinstance(step, float)
+    ):
+        dtype = torch.float64
+    return torch.arange(min, max + step, step, dtype=dtype).tolist()
