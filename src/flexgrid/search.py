@@ -21,7 +21,27 @@ logger = get_logger(__name__)
 
 
 class GridSearch:
+    """Runs training trials over a hyperparameter grid.
+
+    Parameters
+    ----------
+    hparams : dict
+        Grid search configuration, including the search space, output folder,
+        metrics, and training command.
+    cmd_args : list[str] | None
+        Additional arguments to pass to every training command.
+    """
+
     def __init__(self, hparams: dict, cmd_args: list[str] | None = None):
+        """Initializes the grid search.
+
+        Parameters
+        ----------
+        hparams : dict
+            Grid search configuration.
+        cmd_args : list[str] | None
+            Additional arguments to pass to every training command.
+        """
         if "cwd" not in hparams:
             hparams["cwd"] = Path(".")
         if "run" not in hparams:
@@ -47,6 +67,7 @@ class GridSearch:
             self.run_trial(trial)
 
     def on_search_start(self):
+        """Creates the trial directory and loads common parameters."""
         self.trials_folder = Path(self.hparams.output_folder) / "trials"
         self.trials_folder.mkdir(
             parents=True,
@@ -184,8 +205,18 @@ class GridSearch:
             Whether the trial is finished
         """
         file_name = self.get_finished_file_name(trial)
-        is_finished = file_name.exists()
-        return is_finished
+        if file_name.exists():
+            return True
+
+        train_log_file_name = file_name.parent / "train_log.txt"
+        if not train_log_file_name.exists():
+            return False
+
+        with open(train_log_file_name) as train_log:
+            return any(
+                line.casefold().startswith("epoch loaded:")
+                for line in train_log
+            )
 
     def get_finished_file_name(self, trial: dict) -> Path:
         """Gets the file name for the marker indicating whether
@@ -213,16 +244,43 @@ def parse_train_log_data(data: str) -> dict:
     result : dict
         The metrics from the log line
     """
-    parts = [
-        part
-        for chunk in data.split(" - ")
-        for part in chunk.split(", ")
-    ]
-    raw_data = dict([part.split(": ") for part in parts])
+    parts = _split_train_log_parts(data)
+    raw_data = dict(part.split(": ", 1) for part in parts)
     return {
         key.replace(" ", "_"): convert_numeric(value)
         for key, value in raw_data.items()
     }
+
+
+def _split_train_log_parts(data: str) -> list[str]:
+    """Splits log fields without splitting collection values."""
+    parts = []
+    start = 0
+    depth = 0
+    index = 0
+
+    while index < len(data):
+        character = data[index]
+        if character in "([{":
+            depth += 1
+        elif character in ")]}":
+            depth = max(0, depth - 1)
+        elif depth == 0:
+            separator_length = 0
+            if data.startswith(" - ", index):
+                separator_length = 3
+            elif data.startswith(", ", index):
+                separator_length = 2
+
+            if separator_length:
+                parts.append(data[start:index])
+                index += separator_length
+                start = index
+                continue
+        index += 1
+
+    parts.append(data[start:])
+    return parts
 
 
 def convert_numeric(value: str) -> str | int | float:
