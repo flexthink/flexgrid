@@ -2,7 +2,7 @@
 name = "flexgrid"
 version = "0.0.1"
 dependencies = [
-    "speechbrain @ git+https://github.com/flexthink/speechbrain.git@paintbrush-fix",
+    "speechbrain",
 ]
 
 [tool.black]
